@@ -24,7 +24,7 @@ function getStatQueries(req, res, next) {
 
 /* GET list - list out all connections */
 router.get('/list', (req, res, next) => {
-    decibelAppDB.manyOrNone('SELECT * FROM connections')
+    decibelAppDB.manyOrNone('SELECT * FROM connections ORDER BY id')
         .then((data) => {
             res.status(200).json({
                 'results': data,
