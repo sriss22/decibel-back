@@ -23,76 +23,72 @@ function getStatQueries(req, res, next) {
 }
 
 /* GET list - list out all connections */
-router.get('/list', function(req, res, next) {
+router.get('/list', (req, res, next) => {
     decibelAppDB.manyOrNone('SELECT * FROM connections')
-        .then(function(data) {
-            res.json({
+        .then((data) => {
+            res.status(200).json({
                 'results': data,
                 'error': false,
-                'errorMessage': null,
-                'status': 200
+                'errorMessage': null
             });
         })
-        .catch(function(error) {
+        .catch((error) => {
             next(createError(500, error.message));
         });
 });
 
 /* POST test - test a connection using credentials passed in */
-router.post('/test', buildConnection, function(req, res, next) {
+router.post('/test', buildConnection, (req, res, next) => {
     var db = pgp(req.connectionString);
 
     db.connect()
-        .then(function(obj) {
-            console.log('obj: ', obj);
+        .then((obj) => {
             obj.done();
-            res.json({
+            res.status(200).json({
                 'results': 'Successfully logged in!',
                 'error': false,
-                'errorMessage': null,
-                'status': 200
+                'errorMessage': null
             });
         })
-        .catch(function (error) {
+        .catch((error) => {
             next(createError(500, error.message));
         })
         .finally(db.$pool.end);
 })
 
 /* POST :id/stats - list out db stats using postgres built in views */
-router.post('/:id/stats', buildConnection, getStatQueries, function(req, res, next) {
+router.post('/:id/stats', buildConnection, getStatQueries, (req, res, next) => {
     var db = pgp(req.connectionString);
 
-    db.task(function(t) {
+    db.task((t) => {
         return t.manyOrNone(req.pg_stat_activity_sql, { db: req.body.db })
-            .then(function(stat_activity_data){
+            .then((stat_activity_data) => {
                 if (stat_activity_data) {
                     return t.manyOrNone(req.pg_stat_user_tables_sql)
-                        .then(function(stat_user_tables_data) {
+                        .then((stat_user_tables_data) => {
                             return {
                                 stat_activity: stat_activity_data,
                                 stat_user_tables: stat_user_tables_data
                             }
                         })
-                        .catch(function(error) {
+                        .catch((error) => {
                             throw new Error(error.message);
                         });
                 }
                 return []; // no data found
             })
-            .catch(function(error) {
+            .catch((error) => {
                 throw new Error(error.message);
             })
     })
-    .then(function(results) {
-        res.json({
+    .then((results) => {
+        res.status(200).json({
             results,
             'error': false,
-            'errorMessage': null,
-            'status': 200
+            'errorMessage': null
         });
     })
-    .catch(function(error) {
+    .catch((error) => {
         next(createError(500, error.message));
     })
     .finally(db.$pool.end);
